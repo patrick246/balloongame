@@ -1,0 +1,16 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #555;
+    overflow:hidden;
+}
+
+.canvas-wrapper {
+    margin: 0 auto;
+    width: 500px;
+    background-color: #bbbbbb;
+}
+
+.canvas-wrapper canvas {
+    width: 500px;
+}
