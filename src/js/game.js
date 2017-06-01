@@ -167,13 +167,13 @@ class BalloonState extends State {
 			case 'touchstart':
 				const points = Array.from(event.touches);
 				points.map(touch => {
-					const boundingRect = this.canvas.getBoundingClientRect();
+					const boundingRect = this.game.canvas.getBoundingClientRect();
 					return {
 						x: touch.pageX - boundingRect.left,
 						y: touch.pageY - boundingRect.top
 					};
 				}).filter(touch => {
-					return touch.x > 0 && touch.x < this.canvas.width && touch.y > 0 && touch.y < this.canvas.height;
+					return touch.x > 0 && touch.x < this.game.canvas.width && touch.y > 0 && touch.y < this.game.canvas.height;
 				}).forEach(touch => {
 					this.balloons.filter(balloon => balloon.checkHit(touch)).forEach(balloon => {
 						balloon.explode();
