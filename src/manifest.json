@@ -1,0 +1,6 @@
+{
+  "name": "BalloonGame",
+  "short_name": "Balloon",
+  "display": "standalone",
+  "orientation": "portrait"
+}
