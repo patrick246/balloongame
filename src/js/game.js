@@ -103,6 +103,7 @@ class BalloonState extends State {
 		this.balloons = [];
 		this.popped = 0;
 		this.speedup = 1;
+		this.baseSpawnCountdown = 600;
 	}
 
 	onInit(game) {
@@ -115,9 +116,12 @@ class BalloonState extends State {
 			this.popped++;
 			if (balloon.type === 'speedup') {
 				this.speedup += 0.6;
+				this.baseSpawnCountdown -= 200;
+				this.spawnCountdown -= 200;
 				this.game.eventbus.publish('speedup', this.speedup);
 				setTimeout(() => {
 					this.speedup -= 0.6;
+					this.baseSpawnCountdown += 200;
 					this.game.eventbus.publish('speedup', this.speedup);
 				}, 10000);
 			} else if(balloon.type === 'bomb') {
@@ -125,7 +129,7 @@ class BalloonState extends State {
 					if(balloon2 !== balloon && !balloon2.popping)
 						balloon2.explode()
 				});
-				this.spawnCountdown += 2000;
+				this.spawnCountdown += 1000;
 			}
 		})
 	}
@@ -133,7 +137,7 @@ class BalloonState extends State {
 	update(dt) {
 		this.spawnCountdown -= dt;
 		if (this.spawnCountdown <= 0) {
-			this.spawnCountdown = 600 + (Math.random() * 500 - 250);
+			this.spawnCountdown = this.baseSpawnCountdown + (Math.random() * 100);
 
 			const spawnProbability = Math.random();
 			const color = this.colors[Math.floor(Math.random() * this.colors.length)];
