@@ -43,20 +43,19 @@ class StateManager {
 	}
 }
 
-class EventBus
-{
+class EventBus {
 	constructor() {
 		this.handlers = {};
 	}
 
 	publish(eventType, event) {
-		if(eventType in this.handlers) {
-			this.handlers[eventType].forEach(handler => handler(event));
+		if (eventType in this.handlers) {
+			this.handlers[eventType].forEach(handler => setTimeout(() => handler(event), 0));
 		}
 	}
 
 	subscribe(eventType, handler) {
-		if(this.handlers[eventType]) {
+		if (this.handlers[eventType]) {
 			this.handlers[eventType].push(handler);
 		} else {
 			this.handlers[eventType] = [handler];
@@ -103,6 +102,7 @@ class BalloonState extends State {
 		];
 		this.balloons = [];
 		this.popped = 0;
+		this.speedup = 1;
 	}
 
 	onInit(game) {
@@ -110,13 +110,44 @@ class BalloonState extends State {
 		this.popped = 0;
 		this.balloons = [];
 		this.spawnCountdown = 0;
+
+		this.game.eventbus.subscribe('balloonpopped', balloon => {
+			this.popped++;
+			if (balloon.type === 'speedup') {
+				this.speedup += 0.4;
+				this.game.eventbus.publish('speedup', this.speedup);
+				setTimeout(() => {
+					this.speedup -= 0.4;
+					this.game.eventbus.publish('speedup', this.speedup);
+				}, 5000);
+			} else if(balloon.type === 'bomb') {
+				this.balloons.forEach(balloon2 => {
+					if(balloon2 !== balloon && !balloon2.popping)
+						balloon2.explode()
+				});
+				this.spawnCountdown += 2000;
+			}
+		})
 	}
 
 	update(dt) {
 		this.spawnCountdown -= dt;
 		if (this.spawnCountdown <= 0) {
 			this.spawnCountdown = 1000 + (Math.random() * 500 - 250);
-			this.balloons.push(new BombBalloon(this.colors[Math.floor(Math.random() * this.colors.length)], this.game));
+
+			const spawnProbability = Math.random();
+			const color = this.colors[Math.floor(Math.random() * this.colors.length)];
+			let balloon = null;
+
+			if (spawnProbability < 0.95) {
+				balloon = new Balloon(color, this.game);
+			} else if (spawnProbability < 0.98) {
+				balloon = new SpeedupBalloon(color, this.game);
+			} else {
+				balloon = new BombBalloon(color, this.game);
+			}
+
+			this.balloons.push(balloon);
 		}
 		this.balloons.forEach(balloon => balloon.update(dt));
 		this.balloons = this.balloons.filter(balloon => !balloon.canRemove());
@@ -146,7 +177,6 @@ class BalloonState extends State {
 				}).forEach(touch => {
 					this.balloons.filter(balloon => balloon.checkHit(touch)).forEach(balloon => {
 						balloon.explode();
-						this.popped++;
 					});
 				});
 				break;
@@ -160,7 +190,6 @@ class BalloonState extends State {
 					return balloon.checkHit(point);
 				}).forEach(balloon => {
 					balloon.explode();
-					this.popped++;
 				});
 				break;
 		}
@@ -169,6 +198,8 @@ class BalloonState extends State {
 
 class Balloon {
 	constructor(color, game) {
+		this.type = 'normal';
+		this.game = game;
 		this.canvasSize = {
 			x: game.canvas.width,
 			y: game.canvas.height
@@ -184,14 +215,17 @@ class Balloon {
 		};
 		this.vel = {
 			x: Math.random() * 16 - 8,
-			y: -75 + (Math.random() * 16 - 8)
+			y: -65 + (Math.random() * 32 - 8)
 		};
 
 		//this.pos = {x:100,y:100}; this.vel={x:0,y:0};
 		//console.log(this.vel);
 		this.popping = false;
-		this.poppingTimer = 0.05;
+		this.poppingTimer = 0.07;
 		this.poppingRate = {x: 100, y: 100};
+		this.speedupfactor = 1;
+
+		this.game.eventbus.subscribe('speedup', factor => this.speedupfactor = factor);
 	}
 
 	update(dt) {
@@ -202,14 +236,14 @@ class Balloon {
 		}
 
 		//console.log('update balloon', this);
-		this.pos.y += this.vel.y * (dt / 1000);
-		this.pos.x += this.vel.x * (dt / 1000);
+		this.pos.y += this.speedupfactor * this.vel.y * (dt / 1000);
+		this.pos.x += this.speedupfactor * this.vel.x * (dt / 1000);
 
 		if (this.popping && this.poppingTimer > 0) {
 			this.poppingTimer -= dt / 1000;
 			this.size.x += this.poppingRate.x * (dt / 1000);
 			this.size.y += this.poppingRate.y * (dt / 1000);
-			this.vel = {x:0,y:0};
+			this.vel = {x: 0, y: 0};
 		}
 
 	}
@@ -241,13 +275,14 @@ class Balloon {
 
 	checkHit(point) {
 		return ((point.x - this.pos.x) * (point.x - this.pos.x)) /
-			((this.size.x+5) * (this.size.x+5)) +
+			((this.size.x + 5) * (this.size.x + 5)) +
 			((point.y - this.pos.y) * (point.y - this.pos.y)) /
-			((this.size.y+5) * (this.size.y+5)) <= 1;
+			((this.size.y + 5) * (this.size.y + 5)) <= 1;
 	}
 
 	explode() {
 		this.popping = true;
+		this.game.eventbus.publish('balloonpopped', this);
 	}
 
 	canRemove() {
@@ -255,8 +290,13 @@ class Balloon {
 	}
 }
 
-class SpeedupBalloon extends Balloon
-{
+class SpeedupBalloon extends Balloon {
+	constructor() {
+		super(...arguments);
+		this.type = 'speedup';
+		this.vel.y -= 30;
+	}
+
 	draw(ctx, game) {
 		super.draw(ctx, game);
 		ctx.beginPath();
@@ -272,13 +312,13 @@ class SpeedupBalloon extends Balloon
 		ctx.stroke();
 		ctx.closePath();
 	}
+
 }
 
-class BombBalloon extends Balloon
-{
+class BombBalloon extends Balloon {
 	constructor(color, game) {
 		super(color, game);
-
+		this.type = 'bomb';
 		this.poppingRate = {x: 2000, y: 2500};
 		this.poppingTimer = 0.45;
 	}
@@ -290,7 +330,7 @@ class BombBalloon extends Balloon
 		const fuseEnd = {x: this.pos.x + this.size.x - 20, y: this.pos.y - this.size.y + 15};
 
 		ctx.beginPath();
-		ctx.arc(this.pos.x, this.pos.y, bombRadius, 0, 2*Math.PI);
+		ctx.arc(this.pos.x, this.pos.y, bombRadius, 0, 2 * Math.PI);
 		ctx.fillStyle = 'white';
 		ctx.moveTo(this.pos.x, this.pos.y - bombRadius);
 		ctx.lineTo(fuseEnd.x, fuseEnd.y);
