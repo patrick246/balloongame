@@ -140,11 +140,11 @@ class BalloonState extends State {
 			let balloon = null;
 
 			if (spawnProbability < 0.95) {
-				balloon = new Balloon(color, this.game);
+				balloon = new Balloon(color, this.game, this.speedup);
 			} else if (spawnProbability < 0.98) {
-				balloon = new SpeedupBalloon(color, this.game);
+				balloon = new SpeedupBalloon(color, this.game, this.speedup);
 			} else {
-				balloon = new BombBalloon(color, this.game);
+				balloon = new BombBalloon(color, this.game, this.speedup);
 			}
 
 			this.balloons.push(balloon);
@@ -196,7 +196,7 @@ class BalloonState extends State {
 }
 
 class Balloon {
-	constructor(color, game) {
+	constructor(color, game, speedup) {
 		this.type = 'normal';
 		this.game = game;
 		this.canvasSize = {
@@ -222,7 +222,7 @@ class Balloon {
 		this.popping = false;
 		this.poppingTimer = 0.07;
 		this.poppingRate = {x: 100, y: 100};
-		this.speedupfactor = 1;
+		this.speedupfactor = speedup;
 
 		this.game.eventbus.subscribe('speedup', factor => this.speedupfactor = factor);
 	}
@@ -315,8 +315,8 @@ class SpeedupBalloon extends Balloon {
 }
 
 class BombBalloon extends Balloon {
-	constructor(color, game) {
-		super(color, game);
+	constructor() {
+		super(...arguments);
 		this.type = 'bomb';
 		this.poppingRate = {x: 2000, y: 2500};
 		this.poppingTimer = 0.45;
