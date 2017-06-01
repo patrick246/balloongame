@@ -5,12 +5,8 @@ body {
     overflow:hidden;
 }
 
-.canvas-wrapper {
+canvas {
     margin: 0 auto;
-    width: 500px;
     background-color: #bbbbbb;
-}
-
-.canvas-wrapper canvas {
-    width: 500px;
+    display: block;
 }
