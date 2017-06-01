@@ -114,12 +114,12 @@ class BalloonState extends State {
 		this.game.eventbus.subscribe('balloonpopped', balloon => {
 			this.popped++;
 			if (balloon.type === 'speedup') {
-				this.speedup += 0.4;
+				this.speedup += 0.6;
 				this.game.eventbus.publish('speedup', this.speedup);
 				setTimeout(() => {
-					this.speedup -= 0.4;
+					this.speedup -= 0.6;
 					this.game.eventbus.publish('speedup', this.speedup);
-				}, 5000);
+				}, 10000);
 			} else if(balloon.type === 'bomb') {
 				this.balloons.forEach(balloon2 => {
 					if(balloon2 !== balloon && !balloon2.popping)
@@ -133,7 +133,7 @@ class BalloonState extends State {
 	update(dt) {
 		this.spawnCountdown -= dt;
 		if (this.spawnCountdown <= 0) {
-			this.spawnCountdown = 1000 + (Math.random() * 500 - 250);
+			this.spawnCountdown = 600 + (Math.random() * 500 - 250);
 
 			const spawnProbability = Math.random();
 			const color = this.colors[Math.floor(Math.random() * this.colors.length)];
@@ -162,7 +162,6 @@ class BalloonState extends State {
 	}
 
 	handleEvent(eventType, event) {
-		let lenghtBefore = this.balloons.length;
 		switch (eventType) {
 			case 'touchstart':
 				const points = Array.from(event.touches);
@@ -215,7 +214,7 @@ class Balloon {
 		};
 		this.vel = {
 			x: Math.random() * 16 - 8,
-			y: -65 + (Math.random() * 32 - 8)
+			y: -90 + (Math.random() * 50 - 15)
 		};
 
 		//this.pos = {x:100,y:100}; this.vel={x:0,y:0};
